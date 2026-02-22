@@ -1,0 +1,135 @@
+<div style='font-family: Arial, sans-serif; line-height: 1.45; color: #111;'>
+	<h2 style='margin: 0 0 10px 0;'>New approval events detected</h2>
+
+	<p style='margin: 0 0 10px 0;'>
+		<b>Wallet:</b>
+		{{walletAddress}}<br />
+		<b>Chain:</b>
+		{{chain}}<br />
+		<b>Scanned blocks:</b>
+		{{fromBlock}}
+		→
+		{{toBlock}}<br />
+
+		<b>Shown:</b>
+		{{events.length}}
+		{{#if moreCount}}
+			(+{{moreCount}}
+			more not shown)
+		{{/if}}
+	</p>
+
+	<hr style='margin: 12px 0;' />
+
+	<table width='100%' cellpadding='0' cellspacing='0' style='border-collapse: collapse;'>
+		<thead>
+			<tr>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Type</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Token</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Spender/Operator</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Details</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Risk</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Reasons</th>
+				<th align='left' style='padding: 8px 6px; border-bottom: 1px solid #ddd;'>Tx</th>
+			</tr>
+		</thead>
+
+		<tbody>
+			{{#each events}}
+				<tr>
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0; white-space: nowrap;'>
+						<b>{{kind}}</b>
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0;'>
+						<div
+							style='font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: #222;'
+						>
+							{{tokenAddress}}
+						</div>
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0;'>
+						<div
+							style='font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: #222;'
+						>
+							{{spender}}
+						</div>
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0;'>
+						<div><b>Block:</b> {{blockNumber}}</div>
+
+						{{#if rawValue}}
+							<div><b>Value:</b>
+								<span
+									style='font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px;'
+								>
+									{{rawValue}}
+								</span>
+							</div>
+						{{else}}
+							<div><b>Approved for all:</b> {{approved}}</div>
+						{{/if}}
+
+						<div style='margin-top: 6px; font-size: 12px; color: #666;'>
+							<b>Tx hash:</b>
+							<span
+								style='font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;'
+							>
+								{{txHash}}
+							</span>
+						</div>
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0; white-space: nowrap;'>
+						<div
+							style='display: inline-block; padding: 2px 8px; border-radius: 10px; background: #f2f2f2; font-size: 12px;'
+						>
+							{{riskLevel}}
+						</div>
+						<div style='font-size: 12px; color: #666; margin-top: 4px;'>
+							score:
+							<b>{{riskScore}}</b>
+						</div>
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0;'>
+						{{#if reasons}}
+							<ul style='margin: 0; padding-left: 16px;'>
+								{{#each reasons}}
+									<li style='margin: 0 0 2px 0;'>{{this}}</li>
+								{{/each}}
+							</ul>
+						{{else}}
+							<span style='font-size: 12px; color: #666;'>—</span>
+						{{/if}}
+					</td>
+
+					<td style='padding: 8px 6px; border-bottom: 1px solid #f0f0f0; white-space: nowrap;'>
+						<a href='{{txUrl}}' target='_blank' rel='noreferrer'>Open</a>
+					</td>
+				</tr>
+			{{/each}}
+		</tbody>
+	</table>
+
+	{{#if moreCount}}
+		<p style='margin: 10px 0 0 0; color: #444;'>
+			And
+			{{moreCount}}
+			more event(s) not shown in this email.
+		</p>
+	{{/if}}
+
+	<hr style='margin: 12px 0;' />
+
+	<p style='margin: 0; font-size: 12px; color: #666;'>
+		Tip: If you don’t recognize the spender/operator, consider revoking the approval as soon as possible.
+	</p>
+
+	<p style='margin: 6px 0 0 0; font-size: 12px; color: #666;'>
+		You are receiving this email because you enabled monitoring in
+		{{appName}}.
+	</p>
+</div>

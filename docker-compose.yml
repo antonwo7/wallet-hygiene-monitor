@@ -1,0 +1,15 @@
+name: wallet-hygiene-monitor
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wallet-hygiene-monitor-postgres
+    environment:
+      POSTGRES_USER: admin841
+      POSTGRES_PASSWORD: wallet21414
+      POSTGRES_DB: wallet-hygiene-monitor
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

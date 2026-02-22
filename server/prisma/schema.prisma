@@ -1,0 +1,179 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Chain {
+  ethereum
+  polygon
+  arbitrum
+}
+
+enum WalletStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum BackfillStatus {
+  pending
+  running
+  done
+  error
+}
+
+enum ApprovalKind {
+  ERC20_APPROVAL
+  APPROVAL_FOR_ALL
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  nickname     String   @unique
+  email        String   @unique
+  firstName    String
+  lastName     String
+  passwordHash String
+
+  emailNotificationsEnabled Boolean @default(true)
+  emailMinRiskScore         Int     @default(1)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  resetTokens  PasswordResetToken[]
+  wallets   Wallet[]
+  trustedSpenders TrustedSpender[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Wallet {
+  id        String       @id @default(cuid())
+  userId    String
+  chain     Chain
+  address   String       
+  status    WalletStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  state     WalletState?
+  events    ApprovalEvent[]
+
+  @@index([userId, chain])
+  @@unique([userId, chain, address])
+}
+
+model WalletState {
+  id              String   @id @default(cuid())
+  walletId        String   @unique
+  lastScannedBlock BigInt  @default(0)
+  updatedAt       DateTime @updatedAt
+
+  backfillStatus     BackfillStatus @default(pending)
+  backfillStartedAt  DateTime?
+  backfillFinishedAt DateTime?
+  backfillError      String?        @db.Text
+
+  wallet          Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalEvent {
+  id           String      @id @default(cuid())
+  walletId     String
+  chain        Chain
+  kind         ApprovalKind
+
+  tokenAddress String
+  spender      String
+
+  rawValue     String?
+  approved     Boolean?
+
+  txHash       String
+  blockNumber  BigInt
+  logIndex     Int
+
+  timestamp    DateTime?
+
+  riskScore    Int         @default(0)
+  riskLevel    RiskLevel   @default(LOW)
+  riskMeta     Json        @default("{}")
+
+  createdAt    DateTime    @default(now())
+
+  wallet       Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([walletId, createdAt])
+  @@index([chain, blockNumber])
+  @@index([riskLevel, createdAt])
+  @@index([walletId, riskLevel, createdAt])
+  @@index([walletId, chain, createdAt])
+  @@unique([chain, txHash, logIndex])
+}
+
+model TrustedSpender {
+  id        String   @id @default(cuid())
+  userId    String
+  chain     Chain
+  spender   String
+  label     String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, chain])
+  @@unique([userId, chain, spender])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  eventId   String
+  channel   NotificationChannel
+  status    NotificationStatus @default(PENDING)
+
+  attempts  Int                @default(0)
+  lastError String?
+  sentAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  event     ApprovalEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([eventId, channel])
+  @@unique([eventId, channel])
+}

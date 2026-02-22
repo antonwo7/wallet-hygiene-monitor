@@ -1,0 +1,94 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =========================
+# Node / Package managers
+# =========================
+node_modules/
+.pnp/
+.pnp.js
+
+# pnpm
+.pnpm-store/
+
+# yarn
+.yarn/
+.yarn-cache/
+.yarn-unplugged/
+.yarn-build-state.yml
+.yarn-install-state.gz
+
+# =========================
+# Build / cache / coverage
+# =========================
+dist/
+build/
+out/
+tmp/
+temp/
+.cache/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Env files (ignore real ones, keep examples)
+# =========================
+.env
+.env.*
+*.env
+*.env.*
+
+!*.example
+!.env.example
+!.env.*.example
+!*.env.example
+!*.env.*.example
+
+# =========================
+# Next.js (client)
+# =========================
+client/.next/
+client/out/
+client/.vercel/
+client/.turbo/
+
+# next-env.d.ts обычно коммитят, но если у тебя он генерится — можно игнорировать.
+# Если хочешь коммитить — удали строку ниже.
+client/next-env.d.ts
+
+# =========================
+# NestJS (server)
+# =========================
+server/dist/
+server/.turbo/
+
+# =========================
+# Prisma / DB local artifacts
+# =========================
+*.sqlite
+*.sqlite3
+
+# =========================
+# Docker / local volumes
+# =========================
+docker-data/
+volumes/
+
+tests/integration/
