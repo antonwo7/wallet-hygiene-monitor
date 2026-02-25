@@ -48,6 +48,11 @@ enum RiskLevel {
   CRITICAL
 }
 
+enum AuthEventType {
+	LOGIN
+	PASSWORD_RESET_REQUEST
+}
+
 model User {
   id           String   @id @default(cuid())
   nickname     String   @unique
@@ -176,4 +181,19 @@ model Notification {
   @@index([status, createdAt])
   @@index([eventId, channel])
   @@unique([eventId, channel])
+}
+
+model AuthAttempt {
+	id        String        @id @default(cuid())
+	type      AuthEventType
+	identifier String
+	email      String?
+	ip         String?
+	userAgent  String?
+	success    Boolean
+	reason     String?
+	createdAt  DateTime      @default(now())
+
+	@@index([type, createdAt])
+	@@index([email, createdAt])
 }

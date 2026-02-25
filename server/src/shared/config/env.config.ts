@@ -47,7 +47,7 @@ export class EnvConfig {
 		return this.config.get('COOKIE_SECURE', { infer: true })
 	}
 	get cookieSameSite() {
-		return this.config.get('COOKIE_SAMESITE', { infer: true })
+		return this.config.get('COOKIE_SAME_SITE', { infer: true })
 	}
 
 	// JWT
@@ -197,6 +197,34 @@ export class EnvConfig {
 	}
 	get logLevel() {
 		return this.config.get('LOG_LEVEL', { infer: true })
+	}
+
+	// Redis
+	get redisUrl() {
+		return this.config.get('REDIS_URL', { infer: true })
+	}
+
+	// Auth protection
+	get authLoginRateLimitMax() {
+		return this.config.get('AUTH_LOGIN_RATE_LIMIT_MAX', { infer: true })
+	}
+	get authLoginRateLimitWindowSec() {
+		return this.config.get('AUTH_LOGIN_RATE_LIMIT_WINDOW_SEC', { infer: true })
+	}
+	get authResetRateLimitMax() {
+		return this.config.get('AUTH_RESET_RATE_LIMIT_MAX', { infer: true })
+	}
+	get authResetRateLimitWindowSec() {
+		return this.config.get('AUTH_RESET_RATE_LIMIT_WINDOW_SEC', { infer: true })
+	}
+	get authFailMax() {
+		return this.config.get('AUTH_FAIL_MAX', { infer: true })
+	}
+	get authFailWindowSec() {
+		return this.config.get('AUTH_FAIL_WINDOW_SEC', { infer: true })
+	}
+	get authLockWindowSec() {
+		return this.config.get('AUTH_LOCK_WINDOW_SEC', { infer: true })
 	}
 
 	explorerTxBaseUrl(chain: Chain): string {

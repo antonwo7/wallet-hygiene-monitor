@@ -43,7 +43,7 @@ export const envSchema = z
 		// Cookies
 		COOKIE_DOMAIN: z.string().optional(),
 		COOKIE_SECURE: boolFromEnv.default(false),
-		COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+		COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
 
 		// JWT
 		JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
@@ -88,6 +88,18 @@ export const envSchema = z
 		// Logs
 		LOG_FORMAT: z.enum(['json', 'pretty']).default('json'),
 		LOG_LEVEL: z.enum(['debug', 'log', 'info', 'warn', 'error']).default('log'),
+
+		// Redis (rate limits, auth lockouts, metrics)
+		REDIS_URL: z.string().optional(),
+
+		// Auth protection
+		AUTH_LOGIN_RATE_LIMIT_MAX: intFromEnv.default(10),
+		AUTH_LOGIN_RATE_LIMIT_WINDOW_SEC: intFromEnv.default(300),
+		AUTH_RESET_RATE_LIMIT_MAX: intFromEnv.default(5),
+		AUTH_RESET_RATE_LIMIT_WINDOW_SEC: intFromEnv.default(1800),
+		AUTH_FAIL_MAX: intFromEnv.default(7),
+		AUTH_FAIL_WINDOW_SEC: intFromEnv.default(900),
+		AUTH_LOCK_WINDOW_SEC: intFromEnv.default(900),
 
 		// Emails
 		EVENTS_PER_EMAIL_LIMIT: intFromEnv.default(25),

@@ -8,6 +8,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto'
 import { AuthGuard } from './guards/auth.guard'
 import { clearAuthCookies, setAuthCookies } from '../../shared/security/cookies'
 import { AuthCookieConfig } from './config/auth-cookie.config'
+import { RateLimit } from '../../shared/security/rate-limit.decorator'
+import { RateLimitGuard } from '../../shared/security/rate-limit.guard'
 
 @Controller('auth')
 export class AuthController {
@@ -25,8 +27,13 @@ export class AuthController {
 	}
 
 	@Post('login')
-	async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-		const { user, tokens } = await this.auth.login(dto)
+	@UseGuards(RateLimitGuard)
+	@RateLimit({ keyPrefix: 'auth:login', max: 0, windowSec: 0 })
+	async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+		const { user, tokens } = await this.auth.login(dto, {
+			ip: req.ip,
+			userAgent: req.headers['user-agent'] as string | undefined
+		})
 		const base = this.cookies.baseOptions()
 		setAuthCookies(res, tokens, { domain: base.domain, secure: base.secure, sameSite: base.sameSite as any })
 		return { user: await this.auth.getUserSafe(user.id) }
@@ -39,6 +46,12 @@ export class AuthController {
 		return { ok: true }
 	}
 
+	// Used by the frontend to obtain the initial CSRF cookie.
+	@Get('csrf')
+	async csrf() {
+		return { ok: true }
+	}
+
 	@UseGuards(AuthGuard)
 	@Get('me')
 	async me(@Req() req: Request) {
@@ -47,8 +60,13 @@ export class AuthController {
 	}
 
 	@Post('password/request')
-	async requestReset(@Body() dto: RequestResetDto) {
-		await this.auth.requestPasswordReset(dto.email)
+	@UseGuards(RateLimitGuard)
+	@RateLimit({ keyPrefix: 'auth:reset', max: 0, windowSec: 0 })
+	async requestReset(@Body() dto: RequestResetDto, @Req() req: Request) {
+		await this.auth.requestPasswordReset(dto.email, {
+			ip: req.ip,
+			userAgent: req.headers['user-agent'] as string | undefined
+		})
 		return { ok: true }
 	}
 

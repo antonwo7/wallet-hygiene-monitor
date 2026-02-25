@@ -1,5 +1,6 @@
 import { Injectable, Logger, type NestMiddleware } from '@nestjs/common'
 import { randomUUID } from 'crypto'
+import { MetricsService } from '../telemetry/metrics.service'
 
 declare global {
 	namespace Express {
@@ -12,6 +13,8 @@ declare global {
 @Injectable()
 export class HttpMiddleware implements NestMiddleware {
 	private readonly log = new Logger('HTTP')
+
+	constructor(private readonly metrics: MetricsService) {}
 
 	use(req: any, res: any, next: () => void) {
 		const start = Date.now()
@@ -26,13 +29,22 @@ export class HttpMiddleware implements NestMiddleware {
 		})
 
 		res.on('finish', () => {
+			const durationMs = Date.now() - start
 			this.log.log('out', {
 				requestId,
 				method: req.method,
 				path: req.originalUrl ?? req.url,
 				statusCode: res.statusCode,
-				durationMs: Date.now() - start
+				durationMs
 			})
+
+			// Basic Prometheus metric. Route is best-effort: use the raw URL.
+			this.metrics.observeHttpDuration(
+				String(req.method),
+				String(req.originalUrl ?? req.url),
+				String(res.statusCode),
+				durationMs
+			)
 		})
 
 		next()

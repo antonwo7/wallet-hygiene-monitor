@@ -9,6 +9,10 @@ import { AuthJwtConfig } from './config/auth-jwt.config'
 import { AppError } from 'src/shared/errors/app-error'
 import { UsersService } from '../users/users.service'
 import { AuthRepository } from './auth.repository'
+import { AuthProtectionService } from './auth-protection.service'
+import { AuthAttemptsService } from './auth-attempts.service'
+import { MetricsService } from '../../shared/telemetry/metrics.service'
+import { AuthEventType } from '@prisma/client'
 
 export type JwtPayload = { sub: string }
 
@@ -22,7 +26,10 @@ export class AuthService {
 		private readonly jwt: JwtService,
 		private readonly jwtConfig: AuthJwtConfig,
 		private readonly appConfig: AppConfig,
-		private readonly mail: MailService
+		private readonly mail: MailService,
+		private readonly protection: AuthProtectionService,
+		private readonly attempts: AuthAttemptsService,
+		private readonly metrics: MetricsService
 	) {}
 
 	async issueTokens(userId: string) {
@@ -71,19 +78,67 @@ export class AuthService {
 		return { user, tokens }
 	}
 
-	async login(dto: { identifier: string; password: string }) {
+	async login(
+		dto: { identifier: string; password: string },
+		meta?: { ip?: string; userAgent?: string }
+	) {
 		this.log.log('login', { identifier: dto.identifier })
 		const identifier = dto.identifier.trim()
 		const isEmail = identifier.includes('@')
+		const normIdentifier = identifier.toLowerCase()
+
+		// Email lockout protection (before checking password)
+		if (isEmail) {
+			await this.protection.assertNotLocked(normIdentifier)
+		}
 
 		const user = isEmail
 			? await this.users.findByEmail(identifier)
 			: await this.users.findByNickname(identifier)
 
-		if (!user) throw new UnauthorizedException('Invalid credentials')
+		if (!user) {
+			this.metrics.incLogin('fail')
+			await this.attempts.logAttempt({
+				type: AuthEventType.LOGIN,
+				identifier: normIdentifier,
+				email: isEmail ? normIdentifier : null,
+				ip: meta?.ip ?? null,
+				userAgent: meta?.userAgent ?? null,
+				success: false,
+				reason: 'USER_NOT_FOUND'
+			})
+			throw new UnauthorizedException('Invalid credentials')
+		}
+
+		// If login via nickname, apply lockouts to the resolved email.
+		await this.protection.assertNotLocked(user.email)
 
 		const ok = await verifyPassword(user.passwordHash, dto.password)
-		if (!ok) throw new UnauthorizedException('Invalid credentials')
+		if (!ok) {
+			this.metrics.incLogin('fail')
+			await this.attempts.logAttempt({
+				type: AuthEventType.LOGIN,
+				identifier: normIdentifier,
+				email: user.email,
+				ip: meta?.ip ?? null,
+				userAgent: meta?.userAgent ?? null,
+				success: false,
+				reason: 'WRONG_PASSWORD'
+			})
+			await this.protection.onLoginFailed(user.email)
+			throw new UnauthorizedException('Invalid credentials')
+		}
+
+		await this.protection.onLoginSuccess(user.email)
+		this.metrics.incLogin('success')
+		await this.attempts.logAttempt({
+			type: AuthEventType.LOGIN,
+			identifier: normIdentifier,
+			email: user.email,
+			ip: meta?.ip ?? null,
+			userAgent: meta?.userAgent ?? null,
+			success: true
+		})
 
 		const tokens = await this.issueTokens(user.id)
 		return { user, tokens }
@@ -93,10 +148,23 @@ export class AuthService {
 		return await this.users.getUser(userId)
 	}
 
-	async requestPasswordReset(email: string) {
+	async requestPasswordReset(email: string, meta?: { ip?: string; userAgent?: string }) {
 		this.log.log('requestPasswordReset', { email })
-		const user = await this.users.findByEmail(email)
-		if (!user) return
+		const norm = email.trim().toLowerCase()
+		const user = await this.users.findByEmail(norm)
+		if (!user) {
+			this.metrics.incResetRequest('ignored')
+			await this.attempts.logAttempt({
+				type: AuthEventType.PASSWORD_RESET_REQUEST,
+				identifier: norm,
+				email: norm,
+				ip: meta?.ip ?? null,
+				userAgent: meta?.userAgent ?? null,
+				success: true,
+				reason: 'USER_NOT_FOUND_IGNORED'
+			})
+			return
+		}
 
 		const rawToken = nanoid(48)
 		const tokenHash = await hashPassword(rawToken)
@@ -114,6 +182,16 @@ export class AuthService {
 		await this.mail.sendPasswordResetEmail(user.email, {
 			resetUrl,
 			expiresAt: expiresAt.toISOString()
+		})
+
+		this.metrics.incResetRequest('success')
+		await this.attempts.logAttempt({
+			type: AuthEventType.PASSWORD_RESET_REQUEST,
+			identifier: norm,
+			email: user.email,
+			ip: meta?.ip ?? null,
+			userAgent: meta?.userAgent ?? null,
+			success: true
 		})
 	}
 
