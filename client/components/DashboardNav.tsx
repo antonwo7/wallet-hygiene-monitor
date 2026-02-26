@@ -15,7 +15,7 @@ export default function DashboardNav() {
 	const pathname = usePathname()
 
 	return (
-		<nav className="border-b border-slate-200 bg-white">
+		<nav className="border-b border-slate-200 bg-white py-4">
 			<div className="mx-auto max-w-5xl px-4 sm:px-6 py-2 flex flex-wrap gap-2">
 				{items.map(it => {
 					const active = pathname === it.href

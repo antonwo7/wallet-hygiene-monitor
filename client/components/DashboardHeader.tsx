@@ -4,7 +4,7 @@ import type { User } from '../lib/api'
 
 export default function DashboardHeader({ user, onLogout }: { user: User; onLogout: () => void }) {
 	return (
-		<header className="border-b border-slate-200 bg-white">
+		<header className="border-b border-slate-200 bg-white py-4">
 			<div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-semibold">
